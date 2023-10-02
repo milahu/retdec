@@ -244,7 +244,7 @@ CHLLWriter::CHLLWriter(llvm::raw_ostream &o, const std::string& outputFormat):
 	optionEmitFunctionPrototypesForNonLibraryFuncs(false)
 {
 	out->setCommentPrefix(getCommentPrefix());
-	out->setOutputLanguage("C");
+	out->setOutputLanguage("C++");
 }
 
 /**
@@ -422,6 +422,18 @@ bool CHLLWriter::emitFileHeader() {
 		out->typedefLine(getCurrentIndent(), "long double", "float128_t");
 	}
 
+	out->newLine();
+	out->keyword("namespace");
+	out->space();
+	// namespace identifier
+	// TODO better?
+	//out->keyword("main");
+	out->labelId("main");
+	out->space();
+	out->punctuation('{');
+	out->newLine();
+	out->newLine();
+
 	//
 	// Structures
 	//
@@ -508,9 +520,17 @@ void CHLLWriter::visit(ShPtr<GlobalVarDef> varDef) {
 	out->addressPush(varDef->getAddress());
 	out->space(getCurrentIndent());
 	emitVarWithType(var);
+	out->punctuation(';');
+	tryEmitVarInfoInComment(var);
+	out->addressPop();
+	out->newLine();
 
 	// Initializer.
+	// split variable and value to fix the C++ error: jump to label crosses initialization
 	if (init) {
+		out->addressPush(varDef->getAddress());
+		out->space(getCurrentIndent());
+		emitVarWithType(var);
 		emitConstantsInStructuredWay = true;
 		if (ShPtr<ConstArray> constArrayInit = cast<ConstArray>(init)) {
 			if (constArrayInit->isInitialized()) {
@@ -528,14 +548,10 @@ void CHLLWriter::visit(ShPtr<GlobalVarDef> varDef) {
 			init->accept(this);
 		}
 		emitConstantsInStructuredWay = false;
+		out->punctuation(';');
+		out->addressPop();
+		out->newLine();
 	}
-
-	out->punctuation(';');
-
-	tryEmitVarInfoInComment(var);
-
-	out->addressPop();
-	out->newLine();
 }
 
 void CHLLWriter::visit(ShPtr<Function> func) {

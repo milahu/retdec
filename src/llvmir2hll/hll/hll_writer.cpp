@@ -287,6 +287,16 @@ bool HLLWriter::emitTargetCode(ShPtr<Module> module) {
 	if (emitInstructionIdiomFunctionsHeader()) { codeEmitted = true; out->newLine(); }
 	if (emitInstructionIdiomFunctions()) { codeEmitted = true; out->newLine(); }
 
+	if (codeEmitted) {
+		// "namespace main" was opened in emitFileHeader()
+		out->newLine();
+		out->punctuation('}');
+		out->space();
+		out->comment("namespace main");
+		out->newLine();
+		out->newLine();
+	}
+
 	//
 	// Meta-information
 	//
